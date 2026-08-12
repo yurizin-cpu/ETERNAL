@@ -355,100 +355,96 @@ requestAnimationFrame(animationLoop);
    ÁUDIO — apenas a faixa enviada, com controle de volume
 ========================================= */
 
-function startAudio() {
+function updateAudioUI() {
+    if (!audioToggle) return;
+    audioToggle.classList.toggle("playing", audioEnabled && audioStarted && !music.paused);
+    audioToggle.setAttribute("aria-pressed", audioEnabled ? "true" : "false");
+    audioToggle.setAttribute("aria-label", audioEnabled ? "Desativar música" : "Ativar música");
+    if (audioLabel) audioLabel.textContent = audioEnabled ? "desativar música" : "ativar música";
+}
 
-    if (!audioEnabled || !music) return;
-    if (audioStarted && !music.paused) return;
+async function startAudio() {
+    if (!audioEnabled || !music) return false;
 
     audioAttempted = true;
     music.muted = false;
-    music.volume = Math.max(.001, baseVolume);
+    music.volume = Math.max(0, Math.min(1, baseVolume));
 
-    // Não chamamos load() a cada tentativa: isso pode reiniciar o download no mobile.
-    // O primeiro gesto do usuário é usado diretamente para liberar o áudio.
-    const promise = music.play();
-
-    if (promise && promise.then) {
-        promise.then(() => {
-            audioStarted = true;
-            audioToggle.classList.add("playing");
-            audioToggle.setAttribute("aria-label", "Desativar música");
-            if (audioLabel) audioLabel.textContent = "desativar música";
-            fadeMusic(Math.min(music.volume, baseVolume), baseVolume, 700);
-        }).catch(() => {
-            audioStarted = false;
-            audioToggle.classList.remove("playing");
-        });
-    } else {
+    try {
+        if (music.readyState === 0) music.load();
+        await music.play();
         audioStarted = true;
-        audioToggle.classList.add("playing");
+        updateAudioUI();
+        return true;
+    } catch (_) {
+        audioStarted = false;
+        updateAudioUI();
+        return false;
     }
 }
 
 music.addEventListener("canplay", () => {
-    if (audioEnabled && !audioStarted && audioAttempted) startAudio();
+    if (audioEnabled && audioAttempted && music.paused) startAudio();
 });
 
 music.addEventListener("error", () => {
     audioStarted = false;
-    audioToggle.classList.remove("playing");
-    audioToggle.setAttribute("aria-label", "Não foi possível carregar a música");
+    updateAudioUI();
 });
 
-// Desktop pode iniciar automaticamente; no mobile o navegador exige gesto.
+// Tenta autoplay no desktop. Se o navegador bloquear, o primeiro toque/clique libera.
 window.addEventListener("load", () => {
-    try { music.volume = baseVolume; music.play().catch(() => {}); } catch (_) {}
+    music.volume = baseVolume;
+    startAudio();
 });
 
 const unlockAudio = event => {
     if (!event.isTrusted || !audioEnabled || audioStarted) return;
     startAudio();
 };
-document.addEventListener("pointerdown", unlockAudio, { capture:true, passive:true });
-document.addEventListener("touchstart", unlockAudio, { capture:true, passive:true });
-document.addEventListener("click", unlockAudio, { capture:true, passive:true });
+
+["pointerdown", "touchstart", "click", "keydown"].forEach(type => {
+    document.addEventListener(type, unlockAudio, { capture: true, passive: true });
+});
 
 function fadeMusic(from, to, duration) {
-
     const start = performance.now();
-
     function step(now) {
         const progress = Math.min((now - start) / duration, 1);
         music.volume = from + (to - from) * progress;
         if (progress < 1) requestAnimationFrame(step);
     }
-
     requestAnimationFrame(step);
-
 }
 
 volumeSlider.addEventListener("input", () => {
     baseVolume = Number(volumeSlider.value) / 100;
-    if (audioStarted && audioEnabled) {
-        music.volume = currentScene === scenes.length - 1 ? baseVolume * .55 : baseVolume;
-    }
+    if (audioStarted && audioEnabled) music.volume = baseVolume;
     if (baseVolume === 0) {
         audioEnabled = false;
-        audioToggle.classList.remove("playing");
+        music.pause();
+        updateAudioUI();
     } else if (!audioEnabled) {
         audioEnabled = true;
         startAudio();
     }
 });
 
-audioToggle.addEventListener("click", () => {
-
+audioToggle.addEventListener("click", async (event) => {
+    event.stopPropagation();
     if (audioEnabled) {
         audioEnabled = false;
-        fadeMusic(music.volume, 0, 500);
-        audioToggle.classList.remove("playing");
-        if (audioLabel) audioLabel.textContent = "ativar música";
+        audioStarted = false;
+        fadeMusic(music.volume, 0, 250);
+        setTimeout(() => { if (!audioEnabled) music.pause(); }, 260);
+        updateAudioUI();
     } else {
         audioEnabled = true;
-        startAudio();
+        await startAudio();
     }
-
 });
+
+updateAudioUI();
 
 /* pequenos efeitos sonoros sintetizados (nenhum arquivo extra é necessário) */
 
