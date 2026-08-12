@@ -1,0 +1,716 @@
+<!DOCTYPE html><html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#070507"><title>ETERNAL — Uma experiência</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="style.css">
+
+</head><body><div id="app">
+
+<!-- =========================================
+     SPRITES (personagem + ícones, reutilizados via <use>)
+========================================== -->
+<svg class="sprite-defs" aria-hidden="true">
+    <symbol id="icon-fox" viewBox="0 0 200 150">
+        <ellipse cx="105" cy="118" rx="55" ry="20" class="fox-shadow"/>
+        <path class="fox-tail" d="M150,110 C185,105 190,60 160,45 C185,55 180,95 150,110 Z"/>
+        <path class="fox-body" d="M55,120 C35,95 45,55 90,50 C130,45 160,70 160,105 C160,125 140,130 115,130 C90,130 65,132 55,120 Z"/>
+        <path class="fox-head" d="M40,70 C25,45 40,20 60,30 C65,15 90,12 98,30 C118,18 132,42 118,62 C130,75 118,95 95,93 C72,96 45,90 40,70 Z"/>
+        <path class="fox-ear-l" d="M45,32 L30,4 L62,26 Z"/>
+        <path class="fox-ear-r" d="M92,22 L98,-4 L118,20 Z"/>
+        <circle class="fox-eye" cx="70" cy="58" r="4.5"/>
+        <path class="fox-blush" d="M52,68 a6,4 0 1,0 0.1,0"/>
+        <path class="fox-muzzle" d="M40,68 C30,72 30,82 42,84 C52,86 62,80 58,70 Z"/>
+        <path class="fox-leg-fl" d="M75,126 L73,146" />
+        <path class="fox-leg-fr" d="M95,128 L98,148" />
+        <path class="fox-leg-bl" d="M120,128 L122,146" />
+        <path class="fox-leg-br" d="M138,124 L142,144" />
+    </symbol>
+    <symbol id="icon-heart-mini" viewBox="0 0 32 29">
+        <path d="M16 29 C16 29 0 18.5 0 8.8 C0 2.6 5 0 9.2 0 C12.6 0 15 2 16 4.4 C17 2 19.4 0 22.8 0 C27 0 32 2.6 32 8.8 C32 18.5 16 29 16 29 Z"/>
+    </symbol>
+    <symbol id="icon-note" viewBox="0 0 24 32">
+        <path d="M9 24 a5 4 0 1 1 -1 -7.9 V4 L21 0 V18 a5 4 0 1 1 -2 -3.6 V8 L11 11 v9.5 A5 4 0 0 1 9 24 Z"/>
+    </symbol>
+</svg>
+
+
+<!-- =========================================
+     LOADING
+========================================== -->
+
+<div id="loader">
+
+    <div class="loader-content">
+
+        <div class="loader-symbol">♥</div>
+
+        <p class="loader-title">
+            ETERNAL
+        </p>
+
+        <div class="loader-line">
+            <span id="loaderProgress"></span>
+        </div>
+
+        <p id="loaderStatus">
+            preparando sua experiência...
+        </p>
+
+        <p id="loaderSkip" class="loader-skip">toque para entrar</p>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================
+     ÁUDIO — apenas a faixa fornecida é usada em toda a experiência
+========================================== -->
+
+<audio
+    id="music"
+    src="audio/music.mp3"
+    loop
+    preload="auto"
+    autoplay
+    playsinline>
+</audio>
+
+
+<!-- =========================================
+     CANVAS
+========================================== -->
+
+<canvas id="particles"></canvas>
+<canvas id="heartCanvas"></canvas>
+<canvas id="transitionCanvas"></canvas>
+
+
+<!-- =========================================
+     ATMOSFERA
+========================================== -->
+
+<div class="ambient ambient-1"></div>
+<div class="ambient ambient-2"></div>
+<div class="ambient ambient-3"></div>
+
+<!-- UNIVERSO 3D: camadas leves, aceleradas por GPU -->
+<div class="universe" aria-hidden="true">
+    <div class="universe-nebula universe-nebula-a"></div>
+    <div class="universe-nebula universe-nebula-b"></div>
+    <div class="universe-stars universe-stars-far"></div>
+    <div class="universe-stars universe-stars-mid"></div>
+    <div class="universe-orbit universe-orbit-a"></div>
+    <div class="universe-orbit universe-orbit-b"></div>
+    <div class="universe-core"></div>
+</div>
+
+<div class="vignette"></div>
+<div class="grain"></div>
+
+
+<!-- =========================================
+     CURSOR
+========================================== -->
+
+<div class="cursor">
+    <div class="cursor-dot"></div>
+</div>
+
+
+<!-- =========================================
+     TOPBAR
+========================================== -->
+
+<header class="topbar">
+
+    <span class="brand">
+        ETERNAL
+    </span>
+
+    <div class="progress">
+        <span id="progressFill"></span>
+    </div>
+
+    <span class="scene-number">
+        <span id="sceneCurrent">00</span>
+        /
+        <span>12</span>
+    </span>
+
+</header>
+
+
+<!-- =========================================
+     EXPERIÊNCIA
+========================================== -->
+
+<main id="experience">
+
+
+    <!-- =====================================
+         INTRO
+    ====================================== -->
+
+    <section class="scene scene-intro active" data-rain="stars">
+
+        <div class="rain-layer"></div>
+
+        <div class="companion companion-peek">
+            <svg class="fox" viewBox="0 0 200 150"><use href="#icon-fox"/></svg>
+        </div>
+
+        <div class="intro-content tilt">
+
+            <div class="small-line"></div>
+
+            <p class="overline">
+                uma experiência feita para uma pessoa
+            </p>
+
+            <h1>
+                <span>Para</span>
+                <span class="accent">você.</span>
+            </h1>
+
+            <p class="intro-description">
+                coloque o mundo em silêncio por alguns minutos.
+            </p>
+
+            <button
+                class="primary-button"
+                data-next>
+
+                <span>Começar</span>
+
+                <b>→</b>
+
+            </button>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================
+         CENA 01
+    ====================================== -->
+
+    <section class="scene scene-one" data-rain="dust">
+
+        <div class="rain-layer"></div>
+
+        <div class="companion companion-walk">
+            <svg class="fox" viewBox="0 0 200 150"><use href="#icon-fox"/></svg>
+        </div>
+
+        <div class="center-text tilt">
+
+            <span class="scene-label">
+                01 — O começo
+            </span>
+
+            <h2>
+                Antes de tudo...
+            </h2>
+
+            <p>
+                existiam milhões de caminhos.
+            </p>
+
+        </div>
+
+        <div class="floating-word word-1">
+            tempo
+        </div>
+
+        <div class="floating-word word-2">
+            acaso
+        </div>
+
+        <div class="floating-word word-3">
+            destino
+        </div>
+
+        <div class="floating-word word-4">
+            momento
+        </div>
+
+    </section>
+
+
+    <!-- =====================================
+         CENA 02
+    ====================================== -->
+
+    <section class="scene scene-two" data-rain="sparks">
+
+        <div class="rain-layer"></div>
+
+        <div class="companion companion-sit">
+            <svg class="fox" viewBox="0 0 200 150"><use href="#icon-fox"/></svg>
+        </div>
+
+        <div class="two-column tilt">
+
+            <div class="number-huge">
+                02
+            </div>
+
+            <div class="text-block">
+
+                <span class="scene-label">
+                    E então aconteceu
+                </span>
+
+                <h2>
+                    um encontro
+                    <em>inesperado.</em>
+                </h2>
+
+                <p>
+                    Algumas pessoas entram na nossa vida
+                    sem avisar o quanto vão significar.
+                </p>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================
+         CENA 03
+    ====================================== -->
+
+    <section class="scene scene-three" data-rain="hearts">
+
+        <div class="rain-layer"></div>
+
+        <div class="companion companion-pull">
+            <svg class="fox" viewBox="0 0 200 150"><use href="#icon-fox"/></svg>
+            <svg class="companion-string" viewBox="0 0 100 40" preserveAspectRatio="none">
+                <path d="M0,6 Q50,40 100,6" />
+            </svg>
+            <svg class="companion-heart" viewBox="0 0 32 29"><use href="#icon-heart-mini"/></svg>
+        </div>
+
+        <div class="heart-intro">
+
+            <span class="scene-label">
+                03 — O que permanece
+            </span>
+
+            <h2>
+                Algumas coisas
+                <em>ficam.</em>
+            </h2>
+
+            <p>
+                Gire o coração para descobrir.
+            </p>
+
+        </div>
+
+        <div class="heart-interaction" id="heartInteraction" aria-label="Coração 3D interativo">
+            <div class="heart-3d" id="heart3D" role="img" aria-label="Coração 3D. Arraste para girar.">
+                <span class="heart-3d-front">♥</span>
+                <span class="heart-3d-back">♥</span>
+            </div>
+            <span class="heart-rotate-hint">arraste para girar</span>
+        </div>
+
+    </section>
+
+
+    <!-- =====================================
+         CENA 04
+    ====================================== -->
+
+    <section class="scene scene-four" data-rain="notes">
+
+        <div class="rain-layer"></div>
+
+        <div class="companion companion-float">
+            <svg class="fox" viewBox="0 0 200 150"><use href="#icon-fox"/></svg>
+            <svg class="companion-note" viewBox="0 0 24 32"><use href="#icon-note"/></svg>
+        </div>
+
+        <div class="quote tilt">
+
+            <span class="scene-label">
+                04 — Talvez
+            </span>
+
+            <h2>
+                O tempo não
+                <span>mede tudo.</span>
+            </h2>
+
+            <div class="quote-line"></div>
+
+            <p>
+                Há momentos que duram segundos,
+                mas permanecem por anos.
+            </p>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================
+         CENA 05
+    ====================================== -->
+
+    <section class="scene scene-five" data-rain="sparks">
+
+        <div class="rain-layer"></div>
+
+        <div class="companion companion-jump">
+            <svg class="fox" viewBox="0 0 200 150"><use href="#icon-fox"/></svg>
+        </div>
+
+        <div class="interactive-title tilt">
+
+            <span class="scene-label">
+                05 — Chegue mais perto
+            </span>
+
+            <h2>
+                toque na tela.
+            </h2>
+
+            <p>
+                Cada toque deixa uma pequena marca.
+            </p>
+
+        </div>
+
+        <div id="touchLayer"></div>
+
+    </section>
+
+
+    <!-- =====================================
+         CENA 06
+    ====================================== -->
+
+    <section class="scene scene-six" data-rain="petals">
+
+        <div class="rain-layer petal-field"></div>
+
+        <div class="companion companion-sniff">
+            <svg class="fox" viewBox="0 0 200 150"><use href="#icon-fox"/></svg>
+        </div>
+
+        <div class="flower-message tilt">
+
+            <span class="scene-label">
+                06 — E de repente
+            </span>
+
+            <h2>
+                tudo ficou
+                <em>mais bonito.</em>
+            </h2>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================
+         CENA 07
+    ====================================== -->
+
+    <section class="scene scene-seven" data-rain="hearts">
+
+        <div class="rain-layer"></div>
+
+        <div class="companion companion-hug">
+            <svg class="fox" viewBox="0 0 200 150"><use href="#icon-fox"/></svg>
+            <svg class="companion-heart companion-heart-big" viewBox="0 0 32 29"><use href="#icon-heart-mini"/></svg>
+        </div>
+
+        <div class="final-build tilt">
+
+            <span class="scene-label">
+                07 — Só mais uma coisa
+            </span>
+
+            <h2>
+                se eu pudesse
+                guardar um instante...
+            </h2>
+
+            <p>
+                eu guardaria este.
+            </p>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================
+         CENA 08 — UNIVERSO
+    ====================================== -->
+
+    <section class="scene scene-eight" data-rain="stars">
+        <div class="rain-layer"></div>
+        <div class="scene-orb orb-one"></div>
+        <div class="scene-orb orb-two"></div>
+        <div class="scene-eight-content tilt">
+            <span class="scene-label">08 — Entre estrelas</span>
+            <h2>Em algum lugar<br><em>o universo parou.</em></h2>
+            <p>Não para o mundo. Só para este instante.</p>
+        </div>
+    </section>
+
+    <!-- =====================================
+         CENA 09 — DISTÂNCIA
+    ====================================== -->
+
+    <section class="scene scene-nine" data-rain="dust">
+        <div class="rain-layer"></div>
+        <div class="distance-ring ring-a"></div>
+        <div class="distance-ring ring-b"></div>
+        <div class="scene-nine-content tilt">
+            <span class="scene-label">09 — Mesmo de longe</span>
+            <h2>Há coisas que<br><em>chegam perto.</em></h2>
+            <p>Mesmo quando nenhum caminho parece curto o bastante.</p>
+        </div>
+    </section>
+
+    <!-- =====================================
+         CENA 10 — MEMÓRIA
+    ====================================== -->
+
+    <section class="scene scene-ten" data-rain="sparks">
+        <div class="rain-layer"></div>
+        <div class="memory-card tilt">
+            <span class="scene-label">10 — Uma memória</span>
+            <div class="memory-number">10</div>
+            <h2>Alguns instantes<br><em>ganham eternidade.</em></h2>
+            <p>E este é um deles.</p>
+        </div>
+    </section>
+
+    <!-- =====================================
+         CENA 11 — ESCOLHA
+    ====================================== -->
+
+    <section class="scene scene-eleven" data-rain="hearts">
+        <div class="rain-layer"></div>
+        <div class="choice-core"></div>
+        <div class="scene-eleven-content tilt">
+            <span class="scene-label">11 — Antes do fim</span>
+            <h2>Se eu tivesse<br>que escolher...</h2>
+            <p class="choice-accent">eu escolheria ficar.</p>
+        </div>
+    </section>
+
+    <!-- =====================================
+         FINAL
+    ====================================== -->
+
+    <section class="scene scene-final" data-rain="gold">
+
+        <div class="rain-layer"></div>
+
+        <div class="final-glow"></div>
+
+        <div class="companion companion-curl">
+            <svg class="fox" viewBox="0 0 200 150"><use href="#icon-fox"/></svg>
+        </div>
+
+        <div class="final-content tilt">
+
+            <span class="scene-label">
+                12 — E no final
+            </span>
+
+            <h2>
+                eu escolheria
+                <em>você.</em>
+            </h2>
+
+            <div class="final-heart">
+                ♥
+            </div>
+
+            <p>
+                sempre.
+            </p>
+
+            <button id="restart">
+                assistir novamente
+            </button>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<!-- =========================================
+     CONTROLES
+========================================== -->
+
+<div class="navigation">
+
+    <button
+        id="previous"
+        aria-label="Cena anterior">
+        ←
+    </button>
+
+    <button
+        id="next"
+        aria-label="Próxima cena">
+        →
+    </button>
+
+</div>
+
+
+<!-- =========================================
+     CONTROLE DE ÁUDIO + VOLUME
+========================================== -->
+
+<div class="audio-cluster">
+
+    <button
+        id="audioToggle"
+        class="audio-toggle"
+        aria-label="Ativar ou desativar música">
+
+        <span class="audio-icon">♫</span><span class="audio-label" id="audioLabel">ativar música</span>
+
+        <span class="audio-bars">
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+        </span>
+
+    </button>
+
+    <div class="volume-control">
+        <input
+            type="range"
+            id="volumeSlider"
+            min="0"
+            max="100"
+            value="55"
+            step="1"
+            aria-label="Volume da música">
+    </div>
+
+</div>
+
+
+<!-- =========================================
+     PERSONALIZAÇÃO DE CORES
+========================================== -->
+
+<button
+    id="themeToggle"
+    class="theme-toggle"
+    aria-label="Abrir painel de fundo e universo">
+    <span class="theme-dot"></span><span class="theme-toggle-text">BG</span>
+</button>
+
+<div id="themePanel" class="theme-panel" aria-label="Painel de background e universo">
+
+    <p class="theme-panel-title">personalizar</p>
+
+    <div class="theme-presets">
+        <button class="theme-swatch" data-primary="#ff4f91" data-secondary="#e45187" data-wine="#64152f" style="--sw:#ff4f91" aria-label="Rosa"></button>
+        <button class="theme-swatch" data-primary="#c96bff" data-secondary="#8a4fe0" data-wine="#3a1a5c" style="--sw:#c96bff" aria-label="Violeta"></button>
+        <button class="theme-swatch" data-primary="#4fd3ff" data-secondary="#3f8fe0" data-wine="#0f3a5c" style="--sw:#4fd3ff" aria-label="Azul"></button>
+        <button class="theme-swatch" data-primary="#ffd24f" data-secondary="#e0a83f" data-wine="#5c4a0f" style="--sw:#ffd24f" aria-label="Dourado"></button>
+        <button class="theme-swatch" data-primary="#4fffb0" data-secondary="#3fe08f" data-wine="#0f5c3a" style="--sw:#4fffb0" aria-label="Esmeralda"></button>
+        <button class="theme-swatch" data-primary="#ff5c5c" data-secondary="#e04f4f" data-wine="#5c0f0f" style="--sw:#ff5c5c" aria-label="Vermelho"></button>
+    </div>
+
+    <label class="theme-field">
+        <span>cor principal</span>
+        <input type="color" id="colorPrimary" value="#ffabc5">
+    </label>
+
+    <label class="theme-field">
+        <span>cor secundária</span>
+        <input type="color" id="colorSecondary" value="#e45187">
+    </label>
+
+    <div class="background-section-title">FUNDO / UNIVERSO</div>
+
+    <label class="theme-field">
+        <span>cor do espaço</span>
+        <input type="color" id="bgColor" value="#050305">
+    </label>
+
+    <label class="theme-range">
+        <span>profundidade 3D <b id="depthValue">70</b></span>
+        <input type="range" id="depthSlider" min="0" max="100" value="70">
+    </label>
+
+    <label class="theme-range">
+        <span>estrelas <b id="starsValue">65</b></span>
+        <input type="range" id="starsSlider" min="0" max="100" value="65">
+    </label>
+
+    <label class="theme-range">
+        <span>movimento <b id="motionValue">75</b></span>
+        <input type="range" id="motionSlider" min="0" max="100" value="75">
+    </label>
+
+    <div class="auto-control">
+        <div><span class="auto-title">experiência automática</span><small>avança e anima as etapas sozinha</small></div>
+        <button id="autoToggle" class="auto-switch active" type="button" aria-pressed="true"><span></span></button>
+    </div>
+
+    <button id="themeReset" class="theme-reset">restaurar padrão</button>
+
+</div>
+
+
+<!-- =========================================
+     DICA
+========================================== -->
+
+<div class="auto-progress" id="autoProgress" aria-hidden="true"></div>
+
+<div
+    id="interactionHint"
+    class="interaction-hint">
+
+    <span>use ← → para navegar</span>
+
+</div>
+
+<!-- TRANSIÇÃO CINEMATOGRÁFICA DE ENCERRAMENTO / REINÍCIO -->
+<div id="cinematicTransition" aria-hidden="true">
+    <div class="ct-stars"></div>
+    <div class="ct-nebula ct-nebula-a"></div>
+    <div class="ct-nebula ct-nebula-b"></div>
+    <div class="ct-ring ct-ring-a"></div>
+    <div class="ct-ring ct-ring-b"></div>
+    <div class="ct-core">♥</div>
+    <div class="ct-title">ETERNAL</div>
+    <div class="ct-subtitle">algumas coisas nunca terminam</div>
+</div>
+
+</div><script src="script.js"></script></body>
+</html>
