@@ -355,96 +355,90 @@ requestAnimationFrame(animationLoop);
    ÁUDIO — apenas a faixa enviada, com controle de volume
 ========================================= */
 
-function updateAudioUI() {
-    if (!audioToggle) return;
-    audioToggle.classList.toggle("playing", audioEnabled && audioStarted && !music.paused);
-    audioToggle.setAttribute("aria-pressed", audioEnabled ? "true" : "false");
-    audioToggle.setAttribute("aria-label", audioEnabled ? "Desativar música" : "Ativar música");
-    if (audioLabel) audioLabel.textContent = audioEnabled ? "desativar música" : "ativar música";
-}
+function startAudio() {
+    if (!audioEnabled || !music) return;
 
-async function startAudio() {
-    if (!audioEnabled || !music) return false;
-
-    audioAttempted = true;
     music.muted = false;
-    music.volume = Math.max(0, Math.min(1, baseVolume));
+    music.volume = Math.max(0.001, Math.min(1, baseVolume));
 
-    try {
-        if (music.readyState === 0) music.load();
-        await music.play();
+    const p = music.play();
+    if (p && typeof p.then === "function") {
+        p.then(() => {
+            audioStarted = true;
+            audioToggle.classList.add("playing");
+            audioToggle.setAttribute("aria-label", "Desativar música");
+            if (audioLabel) audioLabel.textContent = "desativar música";
+        }).catch(() => {
+            audioStarted = false;
+            audioToggle.classList.remove("playing");
+            audioToggle.setAttribute("aria-label", "Ativar música");
+            if (audioLabel) audioLabel.textContent = "ativar música";
+        });
+    } else {
         audioStarted = true;
-        updateAudioUI();
-        return true;
-    } catch (_) {
-        audioStarted = false;
-        updateAudioUI();
-        return false;
+        audioToggle.classList.add("playing");
+        audioToggle.setAttribute("aria-label", "Desativar música");
+        if (audioLabel) audioLabel.textContent = "desativar música";
     }
 }
 
 music.addEventListener("canplay", () => {
-    if (audioEnabled && audioAttempted && music.paused) startAudio();
+    if (audioEnabled && !audioStarted) {
+        // If the browser has already granted autoplay, this starts immediately.
+        startAudio();
+    }
 });
 
 music.addEventListener("error", () => {
     audioStarted = false;
-    updateAudioUI();
+    audioToggle.classList.remove("playing");
+    audioToggle.setAttribute("aria-label", "Ativar música");
+    if (audioLabel) audioLabel.textContent = "erro no áudio";
 });
 
-// Tenta autoplay no desktop. Se o navegador bloquear, o primeiro toque/clique libera.
+// Autoplay is attempted, but browsers may require a real user gesture.
 window.addEventListener("load", () => {
-    music.volume = baseVolume;
     startAudio();
 });
 
-const unlockAudio = event => {
-    if (!event.isTrusted || !audioEnabled || audioStarted) return;
+function unlockAudio(event) {
+    if (!event || !event.isTrusted || !audioEnabled) return;
     startAudio();
-};
-
-["pointerdown", "touchstart", "click", "keydown"].forEach(type => {
-    document.addEventListener(type, unlockAudio, { capture: true, passive: true });
-});
-
-function fadeMusic(from, to, duration) {
-    const start = performance.now();
-    function step(now) {
-        const progress = Math.min((now - start) / duration, 1);
-        music.volume = from + (to - from) * progress;
-        if (progress < 1) requestAnimationFrame(step);
-    }
-    requestAnimationFrame(step);
 }
 
-volumeSlider.addEventListener("input", () => {
-    baseVolume = Number(volumeSlider.value) / 100;
-    if (audioStarted && audioEnabled) music.volume = baseVolume;
-    if (baseVolume === 0) {
+document.addEventListener("pointerdown", unlockAudio, { capture: true, passive: true });
+document.addEventListener("touchstart", unlockAudio, { capture: true, passive: true });
+document.addEventListener("keydown", unlockAudio, { capture: true, passive: true });
+
+audioToggle.addEventListener("click", (event) => {
+    event.stopPropagation();
+    if (audioEnabled) {
         audioEnabled = false;
         music.pause();
-        updateAudioUI();
-    } else if (!audioEnabled) {
+        audioStarted = false;
+        audioToggle.classList.remove("playing");
+        audioToggle.setAttribute("aria-label", "Ativar música");
+        if (audioLabel) audioLabel.textContent = "ativar música";
+    } else {
         audioEnabled = true;
         startAudio();
     }
 });
 
-audioToggle.addEventListener("click", async (event) => {
-    event.stopPropagation();
-    if (audioEnabled) {
+volumeSlider.addEventListener("input", () => {
+    baseVolume = Number(volumeSlider.value) / 100;
+    if (baseVolume <= 0) {
         audioEnabled = false;
+        music.pause();
         audioStarted = false;
-        fadeMusic(music.volume, 0, 250);
-        setTimeout(() => { if (!audioEnabled) music.pause(); }, 260);
-        updateAudioUI();
+        audioToggle.classList.remove("playing");
+        if (audioLabel) audioLabel.textContent = "ativar música";
     } else {
-        audioEnabled = true;
-        await startAudio();
+        music.volume = baseVolume;
+        if (!audioEnabled) audioEnabled = true;
+        startAudio();
     }
 });
-
-updateAudioUI();
 
 /* pequenos efeitos sonoros sintetizados (nenhum arquivo extra é necessário) */
 
@@ -1132,7 +1126,7 @@ try {
         if (Number.isFinite(value)) {
             volumeSlider.value = String(value);
             baseVolume = value / 100;
-            if (baseVolume === 0) audioEnabled = false;
+            audioEnabled = baseVolume > 0;
         }
     }
     volumeSlider.addEventListener("input", () => {
