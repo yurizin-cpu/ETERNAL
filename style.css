@@ -1270,7 +1270,20 @@ body {
   backface-visibility: hidden;
 }
 
-.heart-3d-back { transform: rotateZ(45deg) rotateY(180deg) translateZ(-8px); color: var(--wine-light); }
+.heart-3d-back {
+  transform: rotateZ(45deg) rotateY(180deg) translateZ(-8px);
+  color: var(--rose);
+  font-family: "Cormorant Garamond", serif;
+  font-style: italic;
+  font-weight: 600;
+  font-size: 1.5rem;
+  letter-spacing: .14em;
+  line-height: 1.4;
+  text-align: center;
+  text-transform: uppercase;
+  padding: 0 20px;
+  text-shadow: 0 0 14px rgba(255,79,145,.55);
+}
 
 .heart-3d::before {
   content: "";
@@ -1344,33 +1357,47 @@ body {
 .memory-card p { margin-top: 28px; color: var(--muted); font-size: .72rem; letter-spacing: .12em; }
 
 .memory-gallery {
-  margin-top: 36px;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  perspective: 1000px;
-}
-.memory-photo {
+  position: relative;
+  margin: 36px auto 0;
+  width: min(340px, 62vw);
   aspect-ratio: 4/5;
-  border-radius: 16px;
-  overflow: hidden;
-  border: 1px solid rgba(255,255,255,.15);
-  box-shadow: 0 18px 40px rgba(0,0,0,.45);
-  transform: rotateY(0deg) translateZ(0);
-  transition: transform .5s var(--ease-soft), box-shadow .5s var(--ease-soft);
+  perspective: 1400px;
 }
-.memory-photo:nth-child(odd) { transform: rotate(-2deg); }
-.memory-photo:nth-child(even) { transform: rotate(2deg); }
-.memory-photo:hover { transform: translateY(-8px) scale(1.04) rotate(0deg); box-shadow: 0 26px 60px rgba(255,79,145,.25); }
-.memory-photo img {
-  width: 100%; height: 100%;
+.memory-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+}
+.memory-photo-fly {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  display: block;
-  filter: saturate(.92) contrast(1.02);
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,.18);
+  box-shadow: 0 30px 70px rgba(0,0,0,.5), 0 0 40px rgba(255,79,145,.12);
+  opacity: 0;
+  transform: translate3d(0, 90px, -320px) rotateX(28deg) rotateZ(-4deg) scale(.82);
+  filter: blur(14px);
+  transition: transform 1s var(--ease), opacity .85s var(--ease), filter 1s var(--ease);
+  will-change: transform, opacity, filter;
+}
+.memory-photo-fly.active {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) rotateX(0deg) rotateZ(0deg) scale(1);
+  filter: blur(0);
+}
+.memory-photo-fly.leaving {
+  opacity: 0;
+  transform: translate3d(0, -70px, 260px) rotateX(-18deg) rotateZ(4deg) scale(1.12);
+  filter: blur(16px);
+  transition: transform 1s var(--ease-soft), opacity .7s var(--ease-soft), filter 1s var(--ease-soft);
 }
 
 @media (max-width:700px) {
-  .memory-gallery { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .memory-gallery { width: min(240px, 72vw); margin-top: 26px; }
 }
 
 .choice-core {
@@ -1456,7 +1483,8 @@ body {
   .heart-intro p { margin-top: 18px; }
   .heart-interaction { top: 59%; width: 86vw; height: 38vh; }
   .heart-3d { width: 120px; height: 120px; }
-  .heart-3d-front, .heart-3d-back { font-size: 8.4rem; }
+  .heart-3d-front { font-size: 8.4rem; }
+  .heart-3d-back { font-size: 1.05rem; }
 
   .heartCanvas { max-width: 100vw; }
 
@@ -1733,7 +1761,8 @@ html, body { min-height: 100%; }
     height: 270px !important;
   }
   .scene-three .heart-3d { width:120px; height:120px; }
-  .scene-three .heart-3d-front, .scene-three .heart-3d-back { font-size:8.2rem; }
+  .scene-three .heart-3d-front { font-size:8.2rem; }
+  .scene-three .heart-3d-back { font-size:1rem; }
   .scene-three .heart-rotate-hint { bottom:0; font-size:.42rem; }
   .theme-toggle { top:max(16px, env(safe-area-inset-top, 0px)) !important; right:12px !important; }
   .theme-panel { top:66px !important; right:10px !important; left:auto !important; }

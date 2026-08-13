@@ -669,6 +669,12 @@ function handleSceneEffects() {
         setTimeout(playHeartbeat, 900);
     }
 
+    if (currentScene === 10) {
+        startMemoryCarousel();
+    } else {
+        stopMemoryCarousel();
+    }
+
     if (currentScene === 8 && audioStarted) {
         fadeMusic(music.volume, baseVolume * .55, 1800);
     } else if (audioStarted && currentScene !== 8) {
@@ -816,6 +822,71 @@ function createBurst(x, y) {
 
     }
 
+}
+
+/* =========================================
+   GALERIA DE MEMÓRIAS — CENA 10 (fotos voando)
+========================================= */
+
+// Nota: links do Discord CDN expiram (parâmetro "ex="), então essas fotos
+// podem parar de carregar depois de um tempo. Para algo permanente, troque
+// por arquivos locais em /images.
+const MEMORY_PHOTOS = [
+    "https://cdn.discordapp.com/attachments/1341850879522898080/1537256208896098364/file_000000006cdc820ea3ee49912e7a4d25.png?ex=6a7e60e9&is=6a7d0f69&hm=8717378cd626c09f27b297ed7d68c9f58c358edf05d22cb1c498a0fd8a3bb010&",
+    "https://cdn.discordapp.com/attachments/1341850879522898080/1537256209432973422/file_00000000c028820ea6fe38201df6ff91.png?ex=6a7e60e9&is=6a7d0f69&hm=f60b8eaebfa7206e1d6bbd7a299109c05cfc2317d1936c97510066446fe59341&",
+    "https://cdn.discordapp.com/attachments/1341850879522898080/1537256209894080742/file_0000000089d0820ea81f385b389a885e.png?ex=6a7e60e9&is=6a7d0f69&hm=c02fd280d217917c09b20ddca9773952d55893405c145303e0c48b693669edee&",
+    "https://cdn.discordapp.com/attachments/1341850879522898080/1537256210351390762/file_0000000027a0820e96a4b4110b35d1e6.png?ex=6a7e60e9&is=6a7d0f69&hm=f2d5deb26ef10c41db2b4d3ca581d1750691a6402f179164b5d1775adfde3a87&",
+    "https://cdn.discordapp.com/attachments/1341850879522898080/1537256210871361626/file_00000000d53c820e9cc2efd930a44313.png?ex=6a7e60e9&is=6a7d0f69&hm=56db4c38652d24066631d719fc04fe7c238fe3a0e0a9f5a57e5a75390030bd8b&",
+    "https://cdn.discordapp.com/attachments/1341850879522898080/1537256211286855830/IMG_20260812_205033.jpg?ex=6a7e60e9&is=6a7d0f69&hm=03813a61b17977b94eb8c5f1e340a332050b7d0e87a4cc73dfd8add4c7fd30c8&",
+    "https://cdn.discordapp.com/attachments/1341850879522898080/1537256212024922202/IMG_20260812_204400.jpg?ex=6a7e60e9&is=6a7d0f69&hm=5c180e61d0599fd13768347cfdb7301fd0ce725fb3eb76a024c79ce5541d8d1f&"
+];
+
+let memoryStageEl = null;
+let memoryIndex = 0;
+let memoryTimer = null;
+const MEMORY_HOLD_MS = 2600;
+const MEMORY_LEAVE_MS = 1000;
+
+function showNextMemoryPhoto() {
+    if (!memoryStageEl) return;
+
+    const img = document.createElement("img");
+    img.src = MEMORY_PHOTOS[memoryIndex % MEMORY_PHOTOS.length];
+    img.alt = "Lorac";
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.className = "memory-photo-fly";
+    memoryStageEl.appendChild(img);
+
+    // entra suavemente, vindo de longe
+    requestAnimationFrame(() => requestAnimationFrame(() => img.classList.add("active")));
+
+    // depois de um tempo, some no ar e é removida
+    const leaveAt = setTimeout(() => {
+        img.classList.remove("active");
+        img.classList.add("leaving");
+        setTimeout(() => img.remove(), MEMORY_LEAVE_MS + 100);
+    }, MEMORY_HOLD_MS);
+
+    img.dataset.leaveTimer = String(leaveAt);
+    memoryIndex++;
+}
+
+function startMemoryCarousel() {
+    memoryStageEl = document.getElementById("memoryStage");
+    if (!memoryStageEl || memoryTimer) return;
+
+    showNextMemoryPhoto();
+    memoryTimer = setInterval(showNextMemoryPhoto, MEMORY_HOLD_MS + MEMORY_LEAVE_MS - 300);
+}
+
+function stopMemoryCarousel() {
+    if (memoryTimer) {
+        clearInterval(memoryTimer);
+        memoryTimer = null;
+    }
+    if (memoryStageEl) memoryStageEl.innerHTML = "";
+    memoryIndex = 0;
 }
 
 /* =========================================
