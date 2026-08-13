@@ -1343,6 +1343,36 @@ body {
 .memory-card h2 { margin-top: 28px; font-size: clamp(3.4rem, 7vw, 7rem); line-height: .8; }
 .memory-card p { margin-top: 28px; color: var(--muted); font-size: .72rem; letter-spacing: .12em; }
 
+.memory-gallery {
+  margin-top: 36px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  perspective: 1000px;
+}
+.memory-photo {
+  aspect-ratio: 4/5;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.15);
+  box-shadow: 0 18px 40px rgba(0,0,0,.45);
+  transform: rotateY(0deg) translateZ(0);
+  transition: transform .5s var(--ease-soft), box-shadow .5s var(--ease-soft);
+}
+.memory-photo:nth-child(odd) { transform: rotate(-2deg); }
+.memory-photo:nth-child(even) { transform: rotate(2deg); }
+.memory-photo:hover { transform: translateY(-8px) scale(1.04) rotate(0deg); box-shadow: 0 26px 60px rgba(255,79,145,.25); }
+.memory-photo img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: saturate(.92) contrast(1.02);
+}
+
+@media (max-width:700px) {
+  .memory-gallery { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+}
+
 .choice-core {
   position: absolute;
   width: 280px; height: 280px;
@@ -1721,41 +1751,4 @@ html, body { min-height: 100%; }
   .navigation{right:12px;bottom:max(14px,env(safe-area-inset-bottom));}
   .theme-toggle{right:12px;top:max(58px,calc(env(safe-area-inset-top) + 12px));}
   .theme-panel{right:10px;left:10px;max-width:none;}
-}
-
-/* ETERNAL audio button — always interactive */
-#musicToggle {
-  position: fixed !important;
-  right: 18px !important;
-  bottom: 18px !important;
-  z-index: 2147483647 !important;
-  width: 52px !important;
-  height: 52px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border: 1px solid rgba(255,255,255,.35) !important;
-  border-radius: 50% !important;
-  background: rgba(8,10,22,.88) !important;
-  color: #fff !important;
-  font-size: 21px !important;
-  cursor: pointer !important;
-  pointer-events: auto !important;
-  touch-action: manipulation !important;
-  user-select: none !important;
-  -webkit-tap-highlight-color: transparent !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-}
-#musicToggle:disabled {
-  opacity: 1 !important;
-  pointer-events: auto !important;
-}
-@media (max-width: 600px) {
-  #musicToggle {
-    right: 14px !important;
-    bottom: calc(14px + env(safe-area-inset-bottom)) !important;
-    width: 48px !important;
-    height: 48px !important;
-  }
 }
